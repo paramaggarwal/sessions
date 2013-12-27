@@ -1,52 +1,52 @@
-var connect = require('connect');
-var cookie = require('cookie');
+var connect = require('connect'),
+  cookie = require('cookie'),
+  uid = require('uid2');
+
+var key = 'mysession';
+var store = {};
 
 connect()
+  // parse cookies
   .use(function(req, res, next) {
-    var pairs = req.headers.cookie.split(/[;,] */);
-    req.cookies = {};
-    req.signedCookies = {};
-    
-    pairs.forEach(function(pair) {
-        var eq_idx = pair.indexOf('=')
+    req.cookies = req.headers.cookie ? cookie.parse(req.headers.cookie) : '';
+    next();
+  })
+  // create and handle sessions
+  .use(function(req, res, next) {
+    var id = req.cookies[key];
 
-        // skip things that don't look like key=value
-        if (eq_idx < 0) {
-            return;
-        }
+    if(!id) {
+      // generate unique key
+      id = uid(24);
 
-        var key = pair.substr(0, eq_idx).trim()
-        var val = pair.substr(++eq_idx, pair.length).trim();
+      // set cookie
+      res.setHeader('Set-Cookie', cookie.serialize(key, id));
+    }
 
-        // quoted values
-        if ('"' == val[0]) {
-            val = val.slice(1, -1);
-        }
+    // if no store for the id, then create one
+    if (id && !store[id]) store[id] = {}; 
 
-        // only assign once
-        if (undefined == req.cookies[key]) {
-            try {
-                req.cookies[key] = decodeURIComponent(val);
-            } catch (e) {
-                req.cookies[key] = val;
-            }
-        }
-    });
+    // init store
+    req.session = store[id];
 
     next();
   })
-  .use(connect.session({ secret: 'secret' }))
+  // manipulate sessions
   .use(function(req, res, next){
-    var sess = req.session;
-    if (sess.views) {
+
+    if (req.session.views) {
+
+      res.statusCode = 200;
       res.setHeader('Content-Type', 'text/html');
-      res.write('<p>views: ' + sess.views + '</p>');
-      res.write('<p>expires in: ' + (sess.cookie.maxAge / 1000) + 's</p>');
-      res.end();
-      sess.views++;
+      res.end('views: ' + req.session.views);
+      
+      req.session.views++;
+
     } else {
-      sess.views = 1;
+
+      req.session.views = 1;  
       res.end('welcome to the session demo. refresh!');
+    
     }
   })
   .listen(3000);
