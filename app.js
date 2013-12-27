@@ -1,17 +1,14 @@
-var express = require('express');
-var app = module.exports = express.createServer();
+var connect = require('connect');
+var app = module.exports = connect();
 
-app.use(express.bodyParser());
-app.use(express.methodOverride());
-app.use(express.cookieParser());
-app.use(express.session({ secret: 'your secret here' }));
-app.use(app.router);
+app.use(connect.cookieParser());
+app.use(connect.session({ secret: 'your secret here' }));
 
-app.use(express.errorHandler({ dumpExceptions: true, showStack: true })); 
+app.use(connect.errorHandler({ dumpExceptions: true, showStack: true })); 
 
-app.get('/', function(req, res){
-  res.send('hello there mr');
+app.use(function(req, res){
+  res.end('hello there mr');
 });
 
 app.listen(3000);
-console.log("Express server listening on port %d in %s mode", app.address().port, app.settings.env);
+console.log("Express server listening on port 3000");
