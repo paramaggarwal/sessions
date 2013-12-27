@@ -1,14 +1,20 @@
 var connect = require('connect');
-var app = module.exports = connect();
 
-app.use(connect.cookieParser());
-app.use(connect.session({ secret: 'your secret here' }));
-
-app.use(connect.errorHandler({ dumpExceptions: true, showStack: true })); 
-
-app.use(function(req, res){
-  res.end('hello there mr');
-});
-
-app.listen(3000);
-console.log("Express server listening on port 3000");
+connect()
+  .use(connect.favicon())
+  .use(connect.cookieParser())
+  .use(connect.session({ secret: 'keyboard cat', cookie: { maxAge: 60000 }}))
+  .use(function(req, res, next){
+    var sess = req.session;
+    if (sess.views) {
+      res.setHeader('Content-Type', 'text/html');
+      res.write('<p>views: ' + sess.views + '</p>');
+      res.write('<p>expires in: ' + (sess.cookie.maxAge / 1000) + 's</p>');
+      res.end();
+      sess.views++;
+    } else {
+      sess.views = 1;
+      res.end('welcome to the session demo. refresh!');
+    }
+  })
+  .listen(3000);
